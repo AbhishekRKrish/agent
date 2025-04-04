@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getContents",
+        "owner": "AbhishekRKrish",
+        "repository": "agent",
+        "path": "main/shortcuts.md"
+      },
+      "name": "GitHub",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "credentials": {
+        "githubApi": "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"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return {\n  json: {\n    content: Buffer.from($node[\"GitHub\"].json.content, 'base64').toString('utf-8')\n  }\n};"
+      },
+      "name": "Decode Content",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "gpt-4-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You're a technical writer improving documentation..."
+            },
+            {
+              "role": "user",
+              "content": "Content: {{$node[\"Decode Content\"].json[\"content\"]}}"
+            }
+          ]
+        }
+      },
+      "name": "OpenAI Title & Overview",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "return {\n  json: {\n    newContent: $node[\"OpenAI Title & Overview\"].json.choices[0].message.content\n  }\n};"
+      },
+      "name": "Structure Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "updateFile",
+        "owner": "AbhishekRKrish",
+        "repository": "agent",
+        "filePath": "main/enhanced_shortcuts.md",
+        "content": "{{$node[\"Structure Data\"].json[\"newContent\"]}}",
+        "commitMessage": "AI-enhanced documentation update"
+      },
+      "name": "GitHub Update",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "credentials": {
+        "githubApi": "your-github-token"
+      }
+    }
+  ]
+}
